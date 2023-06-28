@@ -46,23 +46,29 @@ public class Tests extends TestsSetup {
 	JSONObject verasAcc;
 	String verasEmployeeId = "1337";
 	String verasID;
+	String accountID;
+	int totReqSalary;
 
 
 	public Response getRequest(String param ) {
+		boolean waitForRequest = true;
+		while (waitForRequest) {
+			try {
+				URL = apiURL + param;
+				request = new Request.Builder()
+						.url(URL)
+						.method("GET", null)
+						.addHeader("Authorization", "Bearer " + getToken())
+						.build();
+				response = client.newCall(request).execute();
+			if(response.code()==200){
+				waitForRequest=false;
+			}
 
-		try {
-
-			URL = apiURL + param;
-			request = new Request.Builder()
-					.url(URL)
-					.method("GET",null)
-					.addHeader("Authorization", "Bearer "+ getToken())
-					.build();
-			response = client.newCall(request).execute();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			// Handle the exception as desired (e.g., logging, throwing custom exception, etc.)
+			} catch (Exception e) {
+				e.printStackTrace();
+				// Handle the exception as desired (e.g., logging, throwing custom exception, etc.)
+			}
 		}
 		return response;
 	}
@@ -128,9 +134,31 @@ public class Tests extends TestsSetup {
 		}
 		return null;
 	}
+	public JSONObject getAccWithId(String id) throws IOException {
 
-	public JSONArray getMemberGroupRelationWithId(String memberId) throws IOException {
-		String param = "relationships?filter=memberId=" + memberId;
+			String param = "accounts?filter=id=" + id;
+			try {
+				getRequest(param);
+
+				// Parse the JSON string as a JSONArray
+				accountArray = new JSONArray(response.body().string());
+
+				if (accountArray.length() > 0) {
+					// Extract the first JSONObject from the JSONArray
+					JSONObject jsonObject = accountArray.getJSONObject(0);
+
+					accObjects.add(jsonObject);
+
+					return jsonObject;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		return null;
+	}
+
+	public JSONArray getMemberGroupRelationWithId(String skip, String filter, String Id) throws IOException {
+		String param = "relationships?skip="+ skip +"&filter="+ filter + "=" + Id;
 			getRequest(param);
 
 			// Parse the JSON string as a JSONArray
@@ -138,6 +166,15 @@ public class Tests extends TestsSetup {
 
 				return relationshipsArray;
 	}
+	public JSONArray getGroupWithId(String groupId) throws IOException {
+		String param = "relationships?filter=groupId=" + groupId;
+		getRequest(param);
+
+		// Parse the JSON string as a JSONArray
+		groupArray = new JSONArray(response.body().string());
+
+		return groupArray;}
+
 
 
 
@@ -178,7 +215,7 @@ public class Tests extends TestsSetup {
 
 		// Extract the value
 		verasID = verasAcc.getString("id");
-		JSONArray verasgroups = getMemberGroupRelationWithId(verasID);
+		JSONArray verasgroups = getMemberGroupRelationWithId("0", "memberId", verasID);
 		/**
 		 * TODO: Add code to solve the second assignment where we expect the number of
 		 * groups to be 3.
@@ -221,7 +258,7 @@ public class Tests extends TestsSetup {
 
 		// Extract the value
 		verasID = verasAcc.getString("id");
-		JSONArray verasGroups = getMemberGroupRelationWithId(verasID);
+		JSONArray verasGroups = getMemberGroupRelationWithId("0", "memberId", verasID);
 
 		// Extract from the JSONArray
 		try {
@@ -231,16 +268,18 @@ public class Tests extends TestsSetup {
 				String memberId = jsonObject.getString("memberId");
 				assertEquals("verify the ID of the group " + groupId , verasID, memberId);
 				relationshipsObjects.add(jsonObject);
+				System.out.println("VERA GROUP"+relationshipsObjects);
 
 
 
-				JSONArray verasGroupsGroups = getMemberGroupRelationWithId(groupId);
+				JSONArray verasGroupsGroups = getMemberGroupRelationWithId("0", "memberId", groupId);
 				for (int index = 0; index < verasGroupsGroups.length(); index++) {
 					JSONObject groupObject = verasGroupsGroups.getJSONObject(index);
 					String group_groupId = groupObject.getString("groupId");
 					String group_memberId = groupObject.getString("memberId");
 					assertEquals("verify the ID of the group " + group_groupId , groupId, group_memberId);
 					relationshipsObjects.add(groupObject);
+					System.out.println("GROUP GROUP"+relationshipsObjects);
 				}
 			}
 
@@ -251,14 +290,59 @@ public class Tests extends TestsSetup {
 	}
 
 	@Test
-	public void assignment4() throws InterruptedException {
+	public void assignment4()  throws InterruptedException, IOException {
 		assertTrue(serverUp);
+
+		groupArray = getMemberGroupRelationWithId("0", "groupId", "grp_inhyrda");
+		int skipSize = 50;
+		while (groupArray.length() >= 50) {
+			for (int i = 0; i < groupArray.length(); i++) {
+				jsonObject = groupArray.getJSONObject(i);
+				relationshipsObjects.add(jsonObject);
+			}
+
+			groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", "grp_inhyrda");
+			skipSize = skipSize + 50;
+
+		}
+			for (int i = 0; i < groupArray.length(); i++) {
+				jsonObject = groupArray.getJSONObject(i);
+				relationshipsObjects.add(jsonObject);
+			}
+		assertEquals("Number of account", 166,relationshipsObjects.size());
+
+
+		for (int i = 0; i < relationshipsObjects.size(); i++) {
+			jsonObject = relationshipsObjects.get(i);
+			accountID = jsonObject.getString("memberId");
+			JSONObject account = getAccWithId(accountID);
+			accObjects.add(account);
+		}
+
+		for (int i = 0; i < accObjects.size(); i++) {
+			jsonObject = accObjects.get(i);
+			System.out.println(i);
+
+
+			if (jsonObject.getInt("salary") > 0) {
+				// Invoke methods on jsonObject safely
+				int value = jsonObject.getInt("salary");
+				String name = jsonObject.getString("firstName");
+				totReqSalary += value;
+			} else {
+				// Handle the case when jsonObject is null
+				System.out.println("jsonObject is null");
+			}
+
+
+		}
 
 		/**
 		 * TODO: Add code to solve the fourth assignment. Add Asserts to verify the
 		 * total salary requested
 		 */
 	}
+
 
 	@Test
 	public void assignment5() throws InterruptedException {
@@ -269,5 +353,6 @@ public class Tests extends TestsSetup {
 		 * managers requested
 		 */
 	}
+
 
 }
