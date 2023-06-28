@@ -19,7 +19,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Simple concrete class for JUnit tests with uses {@link TestsSetup} as a
  * foundation for starting/stopping the API server for tests.
- * 
+ *
  * You may configure port, api user and api port in {@link TestVariables} if
  * needed.
  */
@@ -52,7 +52,9 @@ public class Tests extends TestsSetup {
 
 	public Response getRequest(String param ) {
 		boolean waitForRequest = true;
+		int loopKiller = 0;
 		while (waitForRequest) {
+
 			try {
 				URL = apiURL + param;
 				request = new Request.Builder()
@@ -61,9 +63,11 @@ public class Tests extends TestsSetup {
 						.addHeader("Authorization", "Bearer " + getToken())
 						.build();
 				response = client.newCall(request).execute();
-			if(response.code()==200){
+			if(response.code()==200 || loopKiller == 3 ){
 				waitForRequest=false;
 			}
+
+			loopKiller =+ 1;
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -95,6 +99,7 @@ public class Tests extends TestsSetup {
 
 				// Extract the value
 				token = jsonResponse.getString("token");
+				response.close();
 			} catch (Exception e) {
 				// Handle the exception (e.g., log error, throw custom exception, etc.)
 				e.printStackTrace();
@@ -146,8 +151,6 @@ public class Tests extends TestsSetup {
 				if (accountArray.length() > 0) {
 					// Extract the first JSONObject from the JSONArray
 					JSONObject jsonObject = accountArray.getJSONObject(0);
-
-					accObjects.add(jsonObject);
 
 					return jsonObject;
 				}
@@ -268,8 +271,7 @@ public class Tests extends TestsSetup {
 				String memberId = jsonObject.getString("memberId");
 				assertEquals("verify the ID of the group " + groupId , verasID, memberId);
 				relationshipsObjects.add(jsonObject);
-				System.out.println("VERA GROUP"+relationshipsObjects);
-
+			
 
 
 				JSONArray verasGroupsGroups = getMemberGroupRelationWithId("0", "memberId", groupId);
@@ -279,7 +281,6 @@ public class Tests extends TestsSetup {
 					String group_memberId = groupObject.getString("memberId");
 					assertEquals("verify the ID of the group " + group_groupId , groupId, group_memberId);
 					relationshipsObjects.add(groupObject);
-					System.out.println("GROUP GROUP"+relationshipsObjects);
 				}
 			}
 
@@ -312,35 +313,40 @@ public class Tests extends TestsSetup {
 		assertEquals("Number of account", 166,relationshipsObjects.size());
 
 
+
 		for (int i = 0; i < relationshipsObjects.size(); i++) {
-			jsonObject = relationshipsObjects.get(i);
-			accountID = jsonObject.getString("memberId");
+			JSONObject jsonObject = relationshipsObjects.get(i);
+			String accountID = jsonObject.getString("memberId");
 			JSONObject account = getAccWithId(accountID);
 			accObjects.add(account);
 		}
 
 		for (int i = 0; i < accObjects.size(); i++) {
 			jsonObject = accObjects.get(i);
-			System.out.println(i);
+
+				if(jsonObject != null) {
+					String name = jsonObject.getString("id");
+					int value = jsonObject.getInt("salary");
+					System.out.println(i);
+					System.out.println(name);
+					System.out.println(value);
+					totReqSalary += value;
+					System.out.println(totReqSalary);
+				}else{
+					System.out.println("Account is null");
+				}
 
 
-			if (jsonObject.getInt("salary") > 0) {
-				// Invoke methods on jsonObject safely
-				int value = jsonObject.getInt("salary");
-				String name = jsonObject.getString("firstName");
-				totReqSalary += value;
-			} else {
-				// Handle the case when jsonObject is null
-				System.out.println("jsonObject is null");
-			}
 
 
 		}
-
 		/**
 		 * TODO: Add code to solve the fourth assignment. Add Asserts to verify the
 		 * total salary requested
 		 */
+		assertEquals("verify the total salary requested",6112609,totReqSalary );
+
+
 	}
 
 
