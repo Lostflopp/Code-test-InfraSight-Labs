@@ -36,6 +36,7 @@ public class Tests extends TestsSetup {
 	JSONArray relationshipsArray;
 	JSONArray accountArray;
 	JSONObject jsonObject;
+	List<String> listOfGroupId;
 	List<JSONObject> accObjects = new ArrayList<>();
 	List<JSONObject> groupObjects = new ArrayList<>();
 	List<JSONObject> relationshipsObjects = new ArrayList<>();
@@ -263,31 +264,58 @@ public class Tests extends TestsSetup {
 		verasID = verasAcc.getString("id");
 		JSONArray verasGroups = getMemberGroupRelationWithId("0", "memberId", verasID);
 
-		// Extract from the JSONArray
 		try {
 			for (int i = 0; i < verasGroups.length(); i++) {
 				jsonObject = verasGroups.getJSONObject(i);
 				String groupId = jsonObject.getString("groupId");
 				String memberId = jsonObject.getString("memberId");
-				assertEquals("verify the ID of the group " + groupId , verasID, memberId);
 				relationshipsObjects.add(jsonObject);
-			
+			}
+
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		try {
+			for (int i = 0; i < relationshipsObjects.size(); i++) {
+				jsonObject = relationshipsObjects.get(i);
+				String memberId = jsonObject.getString("groupId");
+				verasGroups = getMemberGroupRelationWithId("0", "memberId", memberId);
+
+				if(verasGroups != null){
 
 
-				JSONArray verasGroupsGroups = getMemberGroupRelationWithId("0", "memberId", groupId);
-				for (int index = 0; index < verasGroupsGroups.length(); index++) {
-					JSONObject groupObject = verasGroupsGroups.getJSONObject(index);
-					String group_groupId = groupObject.getString("groupId");
-					String group_memberId = groupObject.getString("memberId");
-					assertEquals("verify the ID of the group " + group_groupId , groupId, group_memberId);
-					relationshipsObjects.add(groupObject);
+
+					for (int index = 0; index < verasGroups.length(); index++) {
+						jsonObject = verasGroups.getJSONObject(index);
+						String groupId = jsonObject.getString("groupId");
+
+						boolean containsID = false;
+						for (int in = 0; in < relationshipsObjects.size(); in++) {
+							JSONObject existingJson = relationshipsObjects.get(in);
+							String existingGroupId = existingJson.getString("groupId");
+							if (existingGroupId.equals(groupId)) {
+								containsID = true;
+								break;
+
+							}
+						}
+
+						if(!containsID){
+							relationshipsObjects.add(jsonObject);
+							i = -1;
+						}
+					}
 				}
 			}
 
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
-		assertEquals("Expected number of groups to be 6", 6,relationshipsObjects.size());
+
+
+
+
+		assertEquals("Expected number of groups to be 9", 9,relationshipsObjects.size());
 	}
 
 	@Test
@@ -327,11 +355,7 @@ public class Tests extends TestsSetup {
 				if(jsonObject != null) {
 					String name = jsonObject.getString("id");
 					int value = jsonObject.getInt("salary");
-					System.out.println(i);
-					System.out.println(name);
-					System.out.println(value);
 					totReqSalary += value;
-					System.out.println(totReqSalary);
 				}else{
 					System.out.println("Account is null");
 				}
