@@ -375,14 +375,57 @@ public class Tests extends TestsSetup {
 
 
 	@Test
-	public void assignment5() throws InterruptedException {
+	public void assignment5() throws InterruptedException, IOException {
 		assertTrue(serverUp);
 
 		/**
 		 * TODO: Add code to solve the fifth assignment. Add Asserts to verify the
 		 * managers requested
 		 */
+		List<JSONObject> inSweden = new ArrayList<>();
+		List<JSONObject> inCitys = new ArrayList<>();
+
+		groupArray = getMemberGroupRelationWithId("0", "groupId", "grp_sverige");
+
+		int skipSize = 50;
+		while (groupArray.length() >= 50) {
+			for (int i = 0; i < groupArray.length(); i++) {
+				jsonObject = groupArray.getJSONObject(i);
+				inSweden.add(jsonObject);
+				groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", "grp_sverige");
+				skipSize = skipSize + 50;
+			}
+		}
+			for (int i = 0; i < groupArray.length(); i++) {
+				jsonObject = groupArray.getJSONObject(i);
+				inSweden.add(jsonObject);
+				skipSize = 0;
+		}
+
+			for (int i =0; i < inSweden.size(); i++){
+				jsonObject = inSweden.get(i);
+				String memberId = jsonObject.getString("memberId");
+				groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", memberId);
+				while (groupArray.length() >= 50) {
+					for (int in = 0; in < groupArray.length(); in++) {
+						jsonObject = groupArray.getJSONObject(in);
+						inCitys.add(jsonObject);
+					}
+					skipSize = skipSize + 50;
+					groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", memberId);
+
+				}
+				for (int ind = 0; ind < groupArray.length(); ind++) {
+					jsonObject = groupArray.getJSONObject(ind);
+					inCitys.add(jsonObject);
+					skipSize=0;
+				}
+				if(groupArray == null);{
+					skipSize=0;
+				}
+			}
+
+
+
 	}
-
-
 }
