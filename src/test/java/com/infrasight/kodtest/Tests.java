@@ -1,6 +1,7 @@
 package com.infrasight.kodtest;
 
 
+
 import okhttp3.*;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -12,6 +13,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -40,6 +43,9 @@ public class Tests extends TestsSetup {
 	List<JSONObject> accObjects = new ArrayList<>();
 	List<JSONObject> groupObjects = new ArrayList<>();
 	List<JSONObject> relationshipsObjects = new ArrayList<>();
+	List<JSONObject> salesDepartment = new ArrayList<>();
+	List<JSONObject> managerAndMembers = new ArrayList<>();
+	JSONObject managerFor = new JSONObject();
 	String token;
 	String apiURL = "http://localhost:" + TestVariables.API_PORT + "/api/";
 	int status;
@@ -48,10 +54,11 @@ public class Tests extends TestsSetup {
 	String verasEmployeeId = "1337";
 	String verasID;
 	String accountID;
+	String city;
 	int totReqSalary;
 
 
-	public Response getRequest(String param ) {
+	public Response getRequest(String param) {
 		boolean waitForRequest = true;
 		int loopKiller = 0;
 		while (waitForRequest) {
@@ -64,22 +71,21 @@ public class Tests extends TestsSetup {
 						.addHeader("Authorization", "Bearer " + getToken())
 						.build();
 				response = client.newCall(request).execute();
-			if(response.code()==200 || loopKiller == 3 ){
-				waitForRequest=false;
-			}
+				if (response.code() == 200 || loopKiller == 3) {
+					waitForRequest = false;
+				}
 
-			loopKiller =+ 1;
+				loopKiller = +1;
 
 			} catch (Exception e) {
-				e.printStackTrace();
-				// Handle the exception as desired (e.g., logging, throwing custom exception, etc.)
+				System.out.println(e);
 			}
 		}
 		return response;
 	}
 
 	//Get token
-	public String getToken() throws IOException  {
+	public String getToken() throws IOException {
 
 		if (token == null || token.length() == 0) {
 			try {
@@ -102,8 +108,7 @@ public class Tests extends TestsSetup {
 				token = jsonResponse.getString("token");
 				response.close();
 			} catch (Exception e) {
-				// Handle the exception (e.g., log error, throw custom exception, etc.)
-				e.printStackTrace();
+				System.out.println(e);
 			}
 		}
 		return token;
@@ -140,36 +145,38 @@ public class Tests extends TestsSetup {
 		}
 		return null;
 	}
+
 	public JSONObject getAccWithId(String id) throws IOException {
 
-			String param = "accounts?filter=id=" + id;
-			try {
-				getRequest(param);
+		String param = "accounts?filter=id=" + id;
+		try {
+			getRequest(param);
 
-				// Parse the JSON string as a JSONArray
-				accountArray = new JSONArray(response.body().string());
+			// Parse the JSON string as a JSONArray
+			accountArray = new JSONArray(response.body().string());
 
-				if (accountArray.length() > 0) {
-					// Extract the first JSONObject from the JSONArray
-					JSONObject jsonObject = accountArray.getJSONObject(0);
+			if (accountArray.length() > 0) {
+				// Extract the first JSONObject from the JSONArray
+				JSONObject jsonObject = accountArray.getJSONObject(0);
 
-					return jsonObject;
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
+				return jsonObject;
 			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return null;
 	}
 
 	public JSONArray getMemberGroupRelationWithId(String skip, String filter, String Id) throws IOException {
-		String param = "relationships?skip="+ skip +"&filter="+ filter + "=" + Id;
-			getRequest(param);
+		String param = "relationships?skip=" + skip + "&filter=" + filter + "=" + Id;
+		getRequest(param);
 
-			// Parse the JSON string as a JSONArray
-			relationshipsArray = new JSONArray(response.body().string());
+		// Parse the JSON string as a JSONArray
+		relationshipsArray = new JSONArray(response.body().string());
 
-				return relationshipsArray;
+		return relationshipsArray;
 	}
+
 	public JSONArray getGroupWithId(String groupId) throws IOException {
 		String param = "relationships?filter=groupId=" + groupId;
 		getRequest(param);
@@ -177,9 +184,8 @@ public class Tests extends TestsSetup {
 		// Parse the JSON string as a JSONArray
 		groupArray = new JSONArray(response.body().string());
 
-		return groupArray;}
-
-
+		return groupArray;
+	}
 
 
 	/**
@@ -198,7 +204,7 @@ public class Tests extends TestsSetup {
 
 		verasAcc = getAccWithEmployeeId(verasEmployeeId);
 
-		// Extract the value
+
 		verasID = verasAcc.getString("id");
 		String employeeId = verasAcc.getString("employeeId");
 
@@ -207,8 +213,8 @@ public class Tests extends TestsSetup {
 		 * TODO: Add code to solve the first assignment. Add Assert to show that you
 		 * found the account for Vera
 		 */
-		// Verifying correct account for Vera
-		assertEquals("Expected ID in Account",verasEmployeeId, employeeId);
+
+		assertEquals("Expected ID in Account", verasEmployeeId, employeeId);
 
 	}
 
@@ -217,15 +223,14 @@ public class Tests extends TestsSetup {
 		assertTrue(serverUp);
 		verasAcc = getAccWithEmployeeId(verasEmployeeId);
 
-		// Extract the value
 		verasID = verasAcc.getString("id");
 		JSONArray verasgroups = getMemberGroupRelationWithId("0", "memberId", verasID);
 		/**
 		 * TODO: Add code to solve the second assignment where we expect the number of
 		 * groups to be 3.
 		 */
-		assertEquals("verify the number of groups to be 3",3,verasgroups.length());
-		// Extract from the JSONArray
+		assertEquals("verify the number of groups to be 3", 3, verasgroups.length());
+
 		try {
 			for (int i = 0; i < verasgroups.length(); i++) {
 				jsonObject = verasgroups.getJSONObject(i);
@@ -234,16 +239,15 @@ public class Tests extends TestsSetup {
 				/**
 				 * TODO: Add Assert to verify the IDs of the groups found
 				 */
-				assertEquals("verify the ID of the group " + groupId , verasID, memberId);
+				assertEquals("verify the ID of the group " + groupId, verasID, memberId);
 
-				if(memberId == verasID){
+				if (memberId == verasID) {
 					relationshipsObjects.add(jsonObject);
 				}
 			}
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
-
 
 
 		//
@@ -260,7 +264,7 @@ public class Tests extends TestsSetup {
 
 		verasAcc = getAccWithEmployeeId(verasEmployeeId);
 
-		// Extract the value
+
 		verasID = verasAcc.getString("id");
 		JSONArray verasGroups = getMemberGroupRelationWithId("0", "memberId", verasID);
 
@@ -281,8 +285,7 @@ public class Tests extends TestsSetup {
 				String memberId = jsonObject.getString("groupId");
 				verasGroups = getMemberGroupRelationWithId("0", "memberId", memberId);
 
-				if(verasGroups != null){
-
+				if (verasGroups != null) {
 
 
 					for (int index = 0; index < verasGroups.length(); index++) {
@@ -300,7 +303,7 @@ public class Tests extends TestsSetup {
 							}
 						}
 
-						if(!containsID){
+						if (!containsID) {
 							relationshipsObjects.add(jsonObject);
 							i = -1;
 						}
@@ -313,13 +316,11 @@ public class Tests extends TestsSetup {
 		}
 
 
-
-
-		assertEquals("Expected number of groups to be 9", 9,relationshipsObjects.size());
+		assertEquals("Expected number of groups to be 9", 9, relationshipsObjects.size());
 	}
 
 	@Test
-	public void assignment4()  throws InterruptedException, IOException {
+	public void assignment4() throws InterruptedException, IOException {
 		assertTrue(serverUp);
 
 		groupArray = getMemberGroupRelationWithId("0", "groupId", "grp_inhyrda");
@@ -334,12 +335,11 @@ public class Tests extends TestsSetup {
 			skipSize = skipSize + 50;
 
 		}
-			for (int i = 0; i < groupArray.length(); i++) {
-				jsonObject = groupArray.getJSONObject(i);
-				relationshipsObjects.add(jsonObject);
-			}
-		assertEquals("Number of account", 166,relationshipsObjects.size());
-
+		for (int i = 0; i < groupArray.length(); i++) {
+			jsonObject = groupArray.getJSONObject(i);
+			relationshipsObjects.add(jsonObject);
+		}
+		assertEquals("Number of account", 166, relationshipsObjects.size());
 
 
 		for (int i = 0; i < relationshipsObjects.size(); i++) {
@@ -352,15 +352,13 @@ public class Tests extends TestsSetup {
 		for (int i = 0; i < accObjects.size(); i++) {
 			jsonObject = accObjects.get(i);
 
-				if(jsonObject != null) {
-					String name = jsonObject.getString("id");
-					int value = jsonObject.getInt("salary");
-					totReqSalary += value;
-				}else{
-					System.out.println("Account is null");
-				}
-
-
+			if (jsonObject != null) {
+				String name = jsonObject.getString("id");
+				int value = jsonObject.getInt("salary");
+				totReqSalary += value;
+			} else {
+				System.out.println("Account is null");
+			}
 
 
 		}
@@ -368,7 +366,7 @@ public class Tests extends TestsSetup {
 		 * TODO: Add code to solve the fourth assignment. Add Asserts to verify the
 		 * total salary requested
 		 */
-		assertEquals("verify the total salary requested",6112609,totReqSalary );
+		assertEquals("verify the total salary requested", 6112609, totReqSalary);
 
 
 	}
@@ -383,7 +381,11 @@ public class Tests extends TestsSetup {
 		 * managers requested
 		 */
 		List<JSONObject> inSweden = new ArrayList<>();
+<<<<<<< Updated upstream
 		List<JSONObject> inCitys = new ArrayList<>();
+=======
+		List<JSONObject> employeesInSweden = new ArrayList<>();
+>>>>>>> Stashed changes
 
 		groupArray = getMemberGroupRelationWithId("0", "groupId", "grp_sverige");
 
@@ -392,6 +394,7 @@ public class Tests extends TestsSetup {
 			for (int i = 0; i < groupArray.length(); i++) {
 				jsonObject = groupArray.getJSONObject(i);
 				inSweden.add(jsonObject);
+<<<<<<< Updated upstream
 				groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", "grp_sverige");
 				skipSize = skipSize + 50;
 			}
@@ -427,5 +430,119 @@ public class Tests extends TestsSetup {
 
 
 
+=======
+				try {
+					groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", "grp_sverige");
+				} catch (Exception e) {
+					System.out.println(e);
+				}
+				skipSize = skipSize + 50;
+			}
+		}
+		for (int i = 0; i < groupArray.length(); i++) {
+			jsonObject = groupArray.getJSONObject(i);
+			inSweden.add(jsonObject);
+			skipSize = 0;
+		}
+
+		for (int i = 0; i < inSweden.size(); i++) {
+			jsonObject = inSweden.get(i);
+			String memberId = jsonObject.getString("memberId");
+			try {
+				groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", memberId);
+			} catch (Exception e) {
+				System.out.println(e);
+			}
+			while (groupArray.length() >= 50) {
+				for (int in = 0; in < groupArray.length(); in++) {
+					jsonObject = groupArray.getJSONObject(in);
+					jsonObject.put("city", memberId);
+					employeesInSweden.add(jsonObject);
+				}
+				skipSize = skipSize + 50;
+				try {
+					groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", memberId);
+				} catch (Exception e) {
+					System.out.println(e);
+				}
+			}
+			for (int ind = 0; ind < groupArray.length(); ind++) {
+				jsonObject = groupArray.getJSONObject(ind);
+				jsonObject.put("city", memberId);
+				employeesInSweden.add(jsonObject);
+				skipSize = 0;
+			}
+			if (groupArray == null) {
+				skipSize = 0;
+			}
+		}
+
+		for (int i = 0; i < employeesInSweden.size(); i++) {
+			String employeeId = employeesInSweden.get(i).getString("memberId");
+			String city = employeesInSweden.get(i).getString("city");
+
+			jsonResponse = getAccWithId(employeeId);
+			jsonResponse.put("city", city);
+
+			Long timestamp = jsonResponse.getLong("employedSince");
+			LocalDateTime startdate = LocalDateTime.of(2019, 1, 1, 0, 0, 0);
+			LocalDateTime enddate = LocalDateTime.of(2022, 12, 31, 0, 0, 0);
+
+			long startTimestamp = startdate.toEpochSecond(ZoneOffset.UTC);
+			long endTimestamp = enddate.toEpochSecond(ZoneOffset.UTC);
+
+			String memberId = jsonResponse.getString("id");
+
+			if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
+				try {
+					relationshipsArray = getMemberGroupRelationWithId("0", "memberId", memberId);
+				} catch (Exception e) {
+					System.out.println(e);
+				}
+				for (int ind = 0; ind < relationshipsArray.length(); ind++) {
+					jsonObject = relationshipsArray.getJSONObject(ind);
+					Boolean isSalePerson = jsonObject.getString("groupId").equals("grp_saljare");
+					if (isSalePerson) {
+						salesDepartment.add(jsonResponse);
+					}
+				}
+			}
+		}
+		String nextManager = "";
+		int num = 1;
+
+		for (int i = 0; i < salesDepartment.size(); i++) {
+			String employee = salesDepartment.get(i).getString("id");
+			try {
+				relationshipsArray = getMemberGroupRelationWithId("0", "managedId", employee);
+			} catch (Exception e) {
+				System.out.println(e);
+			}
+
+			for (int ind = 0; ind < relationshipsArray.length(); ind++) {
+				jsonObject = relationshipsArray.getJSONObject(ind);
+				String manager = jsonObject.getString("accountId");
+
+				if (!manager.equals(nextManager)) {
+					if (!managerFor.isEmpty()) {
+						managerFor.put("manager",nextManager);
+						managerAndMembers.add(managerFor);
+					}
+					managerFor.clear();
+					managerFor.put("employee_" + num, employee);
+					nextManager = manager;
+					num = 1;
+				} else {
+					managerFor.put("employee_" + num, employee);
+					num = num + 1;
+				}
+			}
+		}
+		if (!managerFor.isEmpty()) {
+			managerAndMembers.add(managerFor);
+		}
+		System.out.println(managerAndMembers);
+>>>>>>> Stashed changes
 	}
 }
+
