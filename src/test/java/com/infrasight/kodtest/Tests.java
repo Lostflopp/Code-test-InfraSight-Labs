@@ -9,10 +9,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
@@ -39,13 +36,11 @@ public class Tests extends TestsSetup {
 	JSONArray relationshipsArray;
 	JSONArray accountArray;
 	JSONObject jsonObject;
-	List<String> listOfGroupId;
+	List<String> listOfManagersTotEmployees = new ArrayList<>();
 	List<JSONObject> accObjects = new ArrayList<>();
-	List<JSONObject> groupObjects = new ArrayList<>();
 	List<JSONObject> relationshipsObjects = new ArrayList<>();
 	List<JSONObject> salesDepartment = new ArrayList<>();
-	List<JSONObject> managerAndMembers = new ArrayList<>();
-	JSONObject managerFor = new JSONObject();
+	List<String> listOfManagerId = new ArrayList<>();
 	String token;
 	String apiURL = "http://localhost:" + TestVariables.API_PORT + "/api/";
 	int status;
@@ -53,8 +48,6 @@ public class Tests extends TestsSetup {
 	JSONObject verasAcc;
 	String verasEmployeeId = "1337";
 	String verasID;
-	String accountID;
-	String city;
 	int totReqSalary;
 
 
@@ -381,11 +374,7 @@ public class Tests extends TestsSetup {
 		 * managers requested
 		 */
 		List<JSONObject> inSweden = new ArrayList<>();
-<<<<<<< Updated upstream
-		List<JSONObject> inCitys = new ArrayList<>();
-=======
 		List<JSONObject> employeesInSweden = new ArrayList<>();
->>>>>>> Stashed changes
 
 		groupArray = getMemberGroupRelationWithId("0", "groupId", "grp_sverige");
 
@@ -394,43 +383,6 @@ public class Tests extends TestsSetup {
 			for (int i = 0; i < groupArray.length(); i++) {
 				jsonObject = groupArray.getJSONObject(i);
 				inSweden.add(jsonObject);
-<<<<<<< Updated upstream
-				groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", "grp_sverige");
-				skipSize = skipSize + 50;
-			}
-		}
-			for (int i = 0; i < groupArray.length(); i++) {
-				jsonObject = groupArray.getJSONObject(i);
-				inSweden.add(jsonObject);
-				skipSize = 0;
-		}
-
-			for (int i =0; i < inSweden.size(); i++){
-				jsonObject = inSweden.get(i);
-				String memberId = jsonObject.getString("memberId");
-				groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", memberId);
-				while (groupArray.length() >= 50) {
-					for (int in = 0; in < groupArray.length(); in++) {
-						jsonObject = groupArray.getJSONObject(in);
-						inCitys.add(jsonObject);
-					}
-					skipSize = skipSize + 50;
-					groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", memberId);
-
-				}
-				for (int ind = 0; ind < groupArray.length(); ind++) {
-					jsonObject = groupArray.getJSONObject(ind);
-					inCitys.add(jsonObject);
-					skipSize=0;
-				}
-				if(groupArray == null);{
-					skipSize=0;
-				}
-			}
-
-
-
-=======
 				try {
 					groupArray = getMemberGroupRelationWithId(Integer.toString(skipSize), "groupId", "grp_sverige");
 				} catch (Exception e) {
@@ -508,8 +460,7 @@ public class Tests extends TestsSetup {
 				}
 			}
 		}
-		String nextManager = "";
-		int num = 1;
+		System.out.println(salesDepartment.size());
 
 		for (int i = 0; i < salesDepartment.size(); i++) {
 			String employee = salesDepartment.get(i).getString("id");
@@ -522,27 +473,42 @@ public class Tests extends TestsSetup {
 			for (int ind = 0; ind < relationshipsArray.length(); ind++) {
 				jsonObject = relationshipsArray.getJSONObject(ind);
 				String manager = jsonObject.getString("accountId");
-
-				if (!manager.equals(nextManager)) {
-					if (!managerFor.isEmpty()) {
-						managerFor.put("manager",nextManager);
-						managerAndMembers.add(managerFor);
-					}
-					managerFor.clear();
-					managerFor.put("employee_" + num, employee);
-					nextManager = manager;
-					num = 1;
-				} else {
-					managerFor.put("employee_" + num, employee);
-					num = num + 1;
-				}
+				listOfManagerId.add(manager);
 			}
 		}
-		if (!managerFor.isEmpty()) {
-			managerAndMembers.add(managerFor);
+
+		for (String str : listOfManagerId) {
+			int count = 0;
+			for (int i = 0; i < listOfManagerId.size(); i++) {
+				if (str.equals(listOfManagerId.get(i))) {
+					count++;
+				}
+			}
+			listOfManagersTotEmployees.add( str + " - " + count);
 		}
-		System.out.println(managerAndMembers);
->>>>>>> Stashed changes
+		Set<String> uniquePairs = new HashSet<>(listOfManagersTotEmployees);
+		listOfManagersTotEmployees.clear();
+		listOfManagersTotEmployees.addAll(uniquePairs);
+
+		listOfManagersTotEmployees.sort(new Comparator<String>() {
+			@Override
+			public int compare(String s1, String s2) {
+				int value1 = extractValue(s1);
+				int value2 = extractValue(s2);
+				return Integer.compare(value2, value1);
+			}
+
+			private int extractValue(String str) {
+				int hyphenIndex = str.indexOf('-');
+				return Integer.parseInt(str.substring(hyphenIndex + 1).trim());
+			}
+		});
+
+		// Print the sorted list
+		for (String str : listOfManagersTotEmployees) {
+			System.out.println(str + "st");
+		}
 	}
 }
+
 
