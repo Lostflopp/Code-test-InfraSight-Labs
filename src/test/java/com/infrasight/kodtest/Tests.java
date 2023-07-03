@@ -503,8 +503,7 @@ public class Tests extends TestsSetup {
 				return Integer.parseInt(str.substring(hyphenIndex + 1).trim());
 			}
 		});
-
-		// Print the sorted list
+		
 		for (String str : listOfManagersTotEmployees) {
 			System.out.println(str + "st");
 		}
